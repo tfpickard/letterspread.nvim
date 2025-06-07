@@ -1,4 +1,4 @@
-# Makefile for letterspread.nvim
+# Makefile for wordplay.nvim
 # Automatically sets up Python virtual environment and installs NLP dependencies
 
 SHELL := /bin/bash
@@ -25,14 +25,14 @@ YELLOW := \033[1;33m
 BLUE := \033[0;34m
 NC := \033[0m # No Color
 
-.PHONY: all install clean test check-deps check-python setup-venv install-deps install-spacy help
+.PHONY: all install clean test check-deps check-python setup-venv install-deps install-spacy help debug
 
 # Default target
 all: install
 
 # Main installation target
 install: check-python setup-venv install-deps install-spacy download-nltk
-	@echo -e "$(GREEN)✓ letterspread.nvim NLP dependencies installed successfully!$(NC)"
+	@echo -e "$(GREEN)✓ Wordplay.nvim NLP dependencies installed successfully!$(NC)"
 	@echo -e "$(BLUE)Virtual environment: $(VENV_DIR)$(NC)"
 	@echo -e "$(BLUE)Python executable: $(PYTHON_VENV)$(NC)"
 
@@ -56,14 +56,15 @@ setup-venv: $(VENV_DIR)/bin/activate
 
 $(VENV_DIR)/bin/activate: check-python
 	@echo -e "$(BLUE)Setting up Python virtual environment...$(NC)"
+	@echo "Creating virtual environment in: $(PWD)/$(VENV_DIR)"
 	@$(PYTHON) -m venv $(VENV_DIR)
 	@$(PIP) install --upgrade pip setuptools wheel
-	@echo -e "$(GREEN)✓ Virtual environment created$(NC)"
+	@echo -e "$(GREEN)✓ Virtual environment created at $(PWD)/$(VENV_DIR)$(NC)"
 
 # Create requirements.txt
 $(REQUIREMENTS):
 	@echo -e "$(BLUE)Creating requirements.txt...$(NC)"
-	@echo "# letterspread.nvim Python dependencies" > $(REQUIREMENTS)
+	@echo "# Wordplay.nvim Python dependencies" > $(REQUIREMENTS)
 	@echo "spacy>=3.4.0" >> $(REQUIREMENTS)
 	@echo "nltk>=3.7" >> $(REQUIREMENTS)
 	@echo "pyphen>=0.12.0" >> $(REQUIREMENTS)
@@ -148,7 +149,7 @@ update: $(VENV_DIR)/bin/activate
 
 # Show help
 help:
-	@echo -e "$(BLUE)letterspread.nvim Makefile$(NC)"
+	@echo -e "$(BLUE)Wordplay.nvim Makefile$(NC)"
 	@echo ""
 	@echo -e "$(YELLOW)Available targets:$(NC)"
 	@echo "  install     - Install all dependencies (default)"
@@ -157,6 +158,7 @@ help:
 	@echo "  clean       - Remove virtual environment"
 	@echo "  reinstall   - Clean and reinstall"
 	@echo "  update      - Update all dependencies"
+	@echo "  debug       - Show debug information"
 	@echo "  help        - Show this help"
 	@echo ""
 	@echo -e "$(YELLOW)Installation components:$(NC)"
@@ -165,6 +167,27 @@ help:
 	@echo "  install-deps   - Install Python packages"
 	@echo "  install-spacy  - Download spaCy English model"
 	@echo "  download-nltk  - Download NLTK data"
+
+# Debug information
+debug:
+	@echo -e "$(BLUE)Wordplay.nvim Debug Information$(NC)"
+	@echo "Working directory: $(PWD)"
+	@echo "Virtual environment: $(PWD)/$(VENV_DIR)"
+	@echo "Python executable: $(PYTHON)"
+	@echo "Virtual environment Python: $(PYTHON_VENV)"
+	@echo "Virtual environment pip: $(PIP)"
+	@echo "Operating system: $(OS)"
+	@echo ""
+	@echo "File status:"
+	@echo "  Makefile: $(test -f Makefile && echo 'EXISTS' || echo 'MISSING')"
+	@echo "  requirements.txt: $(test -f $(REQUIREMENTS) && echo 'EXISTS' || echo 'MISSING')"
+	@echo "  Virtual environment: $(test -d $(VENV_DIR) && echo 'EXISTS' || echo 'MISSING')"
+	@echo "  Virtual environment Python: $(test -f $(PYTHON_VENV) && echo 'EXISTS' || echo 'MISSING')"
+	@echo ""
+	@if [ -f "$(PYTHON_VENV)" ]; then \
+		echo "Python version in venv: $($(PYTHON_VENV) --version)"; \
+		echo "Pip version in venv: $($(PIP) --version | head -1)"; \
+	fi
 
 # Development targets
 dev-install: install download-nltk test

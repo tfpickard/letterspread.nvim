@@ -1,12 +1,12 @@
--- letterspread.nvim - A Neovim plugin with real NLP capabilities
+-- wordplay.nvim - A Neovim plugin with real NLP capabilities
 -- File structure:
--- lua/letterspread/init.lua (main entry point)
+-- lua/wordplay/init.lua (main entry point)
 -- python/nlp_anagrams.py
 -- python/nlp_poetry.py
 -- python/nlp_wordsearch.py
 
 -- ============================================================================
--- lua/letterspread/init.lua
+-- lua/wordplay/init.lua
 -- ============================================================================
 
 local M = {}
@@ -38,10 +38,37 @@ local config = {
 		include_semantic_similarity = true,
 		filter_by_frequency = true,
 	},
-	python_path = "python3", -- Can be customized
+	python_path = nil, -- Auto-detected
 }
 
-local plugin_root = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h:h")
+-- Get plugin root directory more reliably
+local function get_plugin_root()
+	local info = debug.getinfo(1, "S")
+	if info and info.source then
+		local script_path = info.source:sub(2) -- Remove @ prefix
+		return vim.fn.fnamemodify(script_path, ":h:h")
+	end
+
+	-- Fallback: search for the plugin in common locations
+	local possible_paths = {
+		vim.fn.stdpath("data") .. "/lazy/wordplay.nvim",
+		vim.fn.stdpath("data") .. "/site/pack/*/start/wordplay.nvim",
+		vim.fn.stdpath("config") .. "/pack/*/start/wordplay.nvim",
+	}
+
+	for _, path_pattern in ipairs(possible_paths) do
+		local matches = vim.fn.glob(path_pattern, false, true)
+		for _, match in ipairs(matches) do
+			if vim.fn.isdirectory(match) == 1 then
+				return match
+			end
+		end
+	end
+
+	return nil
+end
+
+local plugin_root = get_plugin_root()
 
 -- ============================================================================
 -- UTILITY FUNCTIONS
@@ -59,6 +86,12 @@ end
 local function run_python_script(script_name, input_text, args)
 	args = args or {}
 	local script_path = get_python_script_path(script_name)
+	local python_path = get_python_path()
+
+	if not python_path then
+		vim.notify("Python not found. Run :WordplayInstall to set up dependencies", vim.log.levels.ERROR)
+		return nil
+	end
 
 	-- Create temporary file for input
 	local temp_input = vim.fn.tempname()
@@ -75,7 +108,7 @@ local function run_python_script(script_name, input_text, args)
 
 	-- Build command
 	local cmd = {
-		config.python_path,
+		python_path,
 		script_path,
 		temp_input,
 		temp_output,
@@ -120,11 +153,73 @@ local function run_python_script(script_name, input_text, args)
 	return parsed
 end
 
+local function get_python_path()
+	-- Auto-detect Python path, preferring virtual environment
+	if not plugin_root then
+		vim.notify("Warning: Could not detect plugin root directory", vim.log.levels.WARN)
+		-- Fallback to system Python
+		local python_candidates = { "python3", "python" }
+		for _, python_cmd in ipairs(python_candidates) do
+			if vim.fn.executable(python_cmd) == 1 then
+				return python_cmd
+			end
+		end
+		return nil
+	end
+
+	local venv_python = plugin_root .. "/.venv/bin/python"
+
+	-- Debug: Check if virtual environment exists
+	local venv_dir = plugin_root .. "/.venv"
+	if vim.fn.isdirectory(venv_dir) == 0 then
+		vim.notify(
+			"Virtual environment not found at: " .. venv_dir .. "\nRun :WordplayInstall to create it",
+			vim.log.levels.INFO
+		)
+	end
+
+	-- Check if virtual environment Python exists and is executable
+	if vim.fn.filereadable(venv_python) == 1 and vim.fn.executable(venv_python) == 1 then
+		return venv_python
+	end
+
+	-- Fallback to configured or system Python
+	if config.python_path and vim.fn.executable(config.python_path) == 1 then
+		return config.python_path
+	end
+
+	-- Try common Python executables
+	local python_candidates = { "python3", "python" }
+	for _, python_cmd in ipairs(python_candidates) do
+		if vim.fn.executable(python_cmd) == 1 then
+			return python_cmd
+		end
+	end
+
+	return nil
+end
+
 local function check_dependencies()
-	-- Check if Python is available
-	local python_check = vim.fn.system(config.python_path .. " --version")
-	if vim.v.shell_error ~= 0 then
-		vim.notify("Python not found. Please install Python 3.7+ and ensure it's in PATH", vim.log.levels.ERROR)
+	local python_path = get_python_path()
+
+	if not python_path then
+		vim.notify("Python not found. Run :WordplayInstall to set up dependencies", vim.log.levels.ERROR)
+		return false
+	end
+
+	-- Debug information
+	vim.notify("Using Python: " .. python_path, vim.log.levels.DEBUG)
+	if plugin_root then
+		vim.notify("Plugin root: " .. plugin_root, vim.log.levels.DEBUG)
+	end
+
+	-- Check Python version
+	local version_check =
+		vim.fn.system(python_path .. " -c \"import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')\"")
+	local major, minor = version_check:match("(%d+)%.(%d+)")
+
+	if not major or not minor or tonumber(major) < 3 or (tonumber(major) == 3 and tonumber(minor) < 7) then
+		vim.notify("Python 3.7+ required. Found: " .. (version_check or "unknown"), vim.log.levels.ERROR)
 		return false
 	end
 
@@ -133,7 +228,7 @@ local function check_dependencies()
 	local missing_packages = {}
 
 	for _, package in ipairs(required_packages) do
-		local check_cmd = config.python_path .. ' -c "import ' .. package .. '"'
+		local check_cmd = python_path .. ' -c "import ' .. package .. '"'
 		local result = vim.fn.system(check_cmd)
 		if vim.v.shell_error ~= 0 then
 			table.insert(missing_packages, package)
@@ -141,15 +236,84 @@ local function check_dependencies()
 	end
 
 	if #missing_packages > 0 then
-		local install_cmd = "pip install " .. table.concat(missing_packages, " ")
-		vim.notify(
-			"Missing Python packages: " .. table.concat(missing_packages, ", ") .. "\nRun: " .. install_cmd,
-			vim.log.levels.WARN
-		)
+		local venv_path = plugin_root and (plugin_root .. "/.venv") or "unknown"
+		local message = "Missing Python packages: "
+			.. table.concat(missing_packages, ", ")
+			.. "\nPython: "
+			.. python_path
+			.. "\nVirtual env: "
+			.. venv_path
+			.. "\nRun :WordplayInstall to install dependencies"
+		vim.notify(message, vim.log.levels.WARN)
 		return false
 	end
 
 	return true
+end
+
+local function install_dependencies()
+	if not plugin_root then
+		vim.notify(
+			"Could not detect plugin installation directory. Please install manually:\n"
+				.. "cd <plugin-directory> && make install",
+			vim.log.levels.ERROR
+		)
+		return
+	end
+
+	local makefile_path = plugin_root .. "/Makefile"
+
+	if vim.fn.filereadable(makefile_path) == 0 then
+		vim.notify(
+			"Makefile not found at: " .. makefile_path .. "\nPlease check plugin installation",
+			vim.log.levels.ERROR
+		)
+		return
+	end
+
+	vim.notify("Installing wordplay.nvim dependencies...\nPlugin directory: " .. plugin_root, vim.log.levels.INFO)
+
+	-- Run make install in the plugin directory
+	local install_cmd = "cd " .. vim.fn.shellescape(plugin_root) .. " && make install"
+
+	-- Run asynchronously to avoid blocking Neovim
+	vim.fn.jobstart(install_cmd, {
+		on_stdout = function(_, data)
+			if data and #data > 0 then
+				for _, line in ipairs(data) do
+					if line and line ~= "" then
+						print("Install: " .. line)
+					end
+				end
+			end
+		end,
+		on_stderr = function(_, data)
+			if data and #data > 0 then
+				for _, line in ipairs(data) do
+					if line and line ~= "" then
+						print("Install Error: " .. line)
+					end
+				end
+			end
+		end,
+		on_exit = function(_, exit_code)
+			if exit_code == 0 then
+				vim.notify(
+					"Dependencies installed successfully! You can now use wordplay commands.",
+					vim.log.levels.INFO
+				)
+				-- Update config to use the new Python path
+				config.python_path = get_python_path()
+			else
+				vim.notify(
+					"Failed to install dependencies (exit code: " .. exit_code .. "). Check output above.",
+					vim.log.levels.ERROR
+				)
+			end
+		end,
+		stdout_buffered = true,
+		stderr_buffered = true,
+	})
 end
 
 -- ============================================================================
@@ -427,11 +591,11 @@ function M.setup(opts)
 	end
 
 	-- Create user commands
-	vim.api.nvim_create_user_command("LetterspreadAnagrams", function()
+	vim.api.nvim_create_user_command("WordplayAnagrams", function()
 		M.find_anagrams()
 	end, { desc = "Find anagrams using NLP analysis" })
 
-	vim.api.nvim_create_user_command("LetterspreadPoetry", function(args)
+	vim.api.nvim_create_user_command("WordplayPoetry", function(args)
 		M.generate_poetry(args.args ~= "" and args.args or nil)
 	end, {
 		nargs = "?",
@@ -441,11 +605,11 @@ function M.setup(opts)
 		desc = "Generate poetry using NLP",
 	})
 
-	vim.api.nvim_create_user_command("LetterspreadSearch", function()
+	vim.api.nvim_create_user_command("WordplaySearch", function()
 		M.create_wordsearch()
 	end, { desc = "Create semantic word search" })
 
-	vim.api.nvim_create_user_command("LetterspreadCheck", function()
+	vim.api.nvim_create_user_command("WordplayCheck", function()
 		if check_dependencies() then
 			vim.notify("All NLP dependencies are available!", vim.log.levels.INFO)
 		end
