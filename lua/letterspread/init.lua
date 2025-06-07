@@ -1,4 +1,4 @@
--- wordplay.nvim - A Neovim plugin with real NLP capabilities
+-- letterspread.nvim - A Neovim plugin with real NLP capabilities
 -- File structure:
 -- lua/letterspread/init.lua (main entry point)
 -- python/nlp_anagrams.py
@@ -6,7 +6,7 @@
 -- python/nlp_wordsearch.py
 
 -- ============================================================================
--- lua/wordplay/init.lua
+-- lua/letterspread/init.lua
 -- ============================================================================
 
 local M = {}
@@ -427,11 +427,11 @@ function M.setup(opts)
 	end
 
 	-- Create user commands
-	vim.api.nvim_create_user_command("WordplayAnagrams", function()
+	vim.api.nvim_create_user_command("letterspreadAnagrams", function()
 		M.find_anagrams()
 	end, { desc = "Find anagrams using NLP analysis" })
 
-	vim.api.nvim_create_user_command("WordplayPoetry", function(args)
+	vim.api.nvim_create_user_command("letterspreadPoetry", function(args)
 		M.generate_poetry(args.args ~= "" and args.args or nil)
 	end, {
 		nargs = "?",
@@ -441,11 +441,11 @@ function M.setup(opts)
 		desc = "Generate poetry using NLP",
 	})
 
-	vim.api.nvim_create_user_command("WordplaySearch", function()
+	vim.api.nvim_create_user_command("letterspreadSearch", function()
 		M.create_wordsearch()
 	end, { desc = "Create semantic word search" })
 
-	vim.api.nvim_create_user_command("WordplayCheck", function()
+	vim.api.nvim_create_user_command("letterspreadCheck", function()
 		if check_dependencies() then
 			vim.notify("All NLP dependencies are available!", vim.log.levels.INFO)
 		end

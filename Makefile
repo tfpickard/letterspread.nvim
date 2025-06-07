@@ -1,4 +1,4 @@
-# Makefile for wordplay.nvim
+# Makefile for letterspread.nvim
 # Automatically sets up Python virtual environment and installs NLP dependencies
 
 SHELL := /bin/bash
@@ -32,7 +32,7 @@ all: install
 
 # Main installation target
 install: check-python setup-venv install-deps install-spacy download-nltk
-	@echo -e "$(GREEN)✓ Wordplay.nvim NLP dependencies installed successfully!$(NC)"
+	@echo -e "$(GREEN)✓ letterspread.nvim NLP dependencies installed successfully!$(NC)"
 	@echo -e "$(BLUE)Virtual environment: $(VENV_DIR)$(NC)"
 	@echo -e "$(BLUE)Python executable: $(PYTHON_VENV)$(NC)"
 
@@ -63,7 +63,7 @@ $(VENV_DIR)/bin/activate: check-python
 # Create requirements.txt
 $(REQUIREMENTS):
 	@echo -e "$(BLUE)Creating requirements.txt...$(NC)"
-	@echo "# Wordplay.nvim Python dependencies" > $(REQUIREMENTS)
+	@echo "# letterspread.nvim Python dependencies" > $(REQUIREMENTS)
 	@echo "spacy>=3.4.0" >> $(REQUIREMENTS)
 	@echo "nltk>=3.7" >> $(REQUIREMENTS)
 	@echo "pyphen>=0.12.0" >> $(REQUIREMENTS)
@@ -148,7 +148,7 @@ update: $(VENV_DIR)/bin/activate
 
 # Show help
 help:
-	@echo -e "$(BLUE)Wordplay.nvim Makefile$(NC)"
+	@echo -e "$(BLUE)letterspread.nvim Makefile$(NC)"
 	@echo ""
 	@echo -e "$(YELLOW)Available targets:$(NC)"
 	@echo "  install     - Install all dependencies (default)"

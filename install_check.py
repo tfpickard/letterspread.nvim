@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Wordplay.nvim installation verification script
+.nvim installation verification script
 Tests all required dependencies and functionality
 """
 
@@ -173,7 +173,7 @@ def test_functionality():
 
 def main():
     """Run all installation tests"""
-    print("Wordplay.nvim Installation Verification")
+    print(".nvim Installation Verification")
     print("=" * 40)
 
     print(f"Python version: {sys.version}")
@@ -203,7 +203,7 @@ def main():
     print(f"Tests passed: {passed}/{total}")
 
     if passed == total:
-        print("🎉 All tests passed! Wordplay.nvim is ready to use.")
+        print("🎉 All tests passed! .nvim is ready to use.")
         return 0
     else:
         print("❌ Some tests failed. Check the output above for details.")
