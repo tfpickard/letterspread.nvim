@@ -427,11 +427,11 @@ function M.setup(opts)
 	end
 
 	-- Create user commands
-	vim.api.nvim_create_user_command("letterspreadAnagrams", function()
+	vim.api.nvim_create_user_command("LetterspreadAnagrams", function()
 		M.find_anagrams()
 	end, { desc = "Find anagrams using NLP analysis" })
 
-	vim.api.nvim_create_user_command("letterspreadPoetry", function(args)
+	vim.api.nvim_create_user_command("LetterspreadPoetry", function(args)
 		M.generate_poetry(args.args ~= "" and args.args or nil)
 	end, {
 		nargs = "?",
@@ -441,11 +441,11 @@ function M.setup(opts)
 		desc = "Generate poetry using NLP",
 	})
 
-	vim.api.nvim_create_user_command("letterspreadSearch", function()
+	vim.api.nvim_create_user_command("LetterspreadSearch", function()
 		M.create_wordsearch()
 	end, { desc = "Create semantic word search" })
 
-	vim.api.nvim_create_user_command("letterspreadCheck", function()
+	vim.api.nvim_create_user_command("LetterspreadCheck", function()
 		if check_dependencies() then
 			vim.notify("All NLP dependencies are available!", vim.log.levels.INFO)
 		end
