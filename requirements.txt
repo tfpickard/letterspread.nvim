@@ -1,0 +1,17 @@
+# Wordplay.nvim Python dependencies
+# NLP libraries for enhanced text analysis and generation
+
+# Core NLP framework
+spacy>=3.4.0
+
+# Natural Language Toolkit
+nltk>=3.7
+
+# Accurate syllable counting
+pyphen>=0.12.0
+
+# Rhyme detection using CMU Pronouncing Dictionary
+pronouncing>=0.2.0
+
+# Numerical computing
+numpy>=1.21.0
