@@ -75,7 +75,7 @@ local plugin_root = get_plugin_root()
 -- ============================================================================
 
 local function get_python_script_path(script_name)
-	return plugin_root .. "/python/" .. script_name
+	return plugin_root .. "../python/" .. script_name
 end
 
 local function get_buffer_text()
@@ -167,10 +167,10 @@ local function get_python_path()
 		return nil
 	end
 
-	local venv_python = plugin_root .. "/.venv/bin/python"
+	local venv_python = plugin_root .. "../.venv/bin/python"
 
 	-- Debug: Check if virtual environment exists
-	local venv_dir = plugin_root .. "/.venv"
+	local venv_dir = plugin_root .. "../.venv"
 	if vim.fn.isdirectory(venv_dir) == 0 then
 		vim.notify(
 			"Virtual environment not found at: " .. venv_dir .. "\nRun :LetterspreadInstall to create it",
@@ -236,7 +236,7 @@ local function check_dependencies()
 	end
 
 	if #missing_packages > 0 then
-		local venv_path = plugin_root and (plugin_root .. "/.venv") or "unknown"
+		local venv_path = plugin_root and (plugin_root .. "../.venv") or "unknown"
 		local message = "Missing Python packages: "
 			.. table.concat(missing_packages, ", ")
 			.. "\nPython: "
@@ -261,7 +261,7 @@ local function install_dependencies()
 		return
 	end
 
-	local makefile_path = plugin_root .. "/Makefile"
+	local makefile_path = plugin_root .. "../Makefile"
 
 	if vim.fn.filereadable(makefile_path) == 0 then
 		vim.notify(
@@ -274,7 +274,7 @@ local function install_dependencies()
 	vim.notify("Installing letterspread.nvim dependencies...\nPlugin directory: " .. plugin_root, vim.log.levels.INFO)
 
 	-- Run make install in the plugin directory
-	local install_cmd = "cd " .. vim.fn.shellescape(plugin_root) .. " && make install"
+	local install_cmd = "cd " .. vim.fn.shellescape(plugin_root) .. "/.. && make install"
 
 	-- Run asynchronously to avoid blocking Neovim
 	vim.fn.jobstart(install_cmd, {
